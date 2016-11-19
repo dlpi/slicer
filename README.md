@@ -1,0 +1,2 @@
+# slicer
+Javascript DLP slicer
