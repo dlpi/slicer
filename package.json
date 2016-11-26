@@ -1,0 +1,22 @@
+{
+  "name": "slicer",
+  "version": "0.0.1",
+  "description": "DLP Slicer",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dlpi/slicer.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dlpi/slicer/issues"
+  },
+  "homepage": "https://github.com/dlpi/slicer#readme",
+  "dependencies": {
+    "meow": "^3.7.0",
+    "simplify-path": "^1.1.0",
+    "stl": "^1.1.1"
+  }
+}
