@@ -120,41 +120,48 @@ let svgPathFromPolygons = (polygons) => {
   return path
 }
 
-let slice = (facets, first, last, step, optimizePolygons = polygons => polygons) => {
+let slice = (facets, _options = {}) => {
   let boundingBox = getBoundingBox(facets)
-  first = first === undefined ? (boundingBox.position.z) : first
-  last = last === undefined ? (boundingBox.position.z + boundingBox.size.z) : last
+  let options = {
+    firstLayerPosition: boundingBox.position.z,
+    lastLayerPosition: boundingBox.position.z + boundingBox.size.z,
+    layerHeight: 0.1,
+    infill: 'solid', // solid, hollow, pattern
+    infillPattern: 'TODO', // TODO
+    wallThickness: 2,
+    optimizePolygons: polygons => polygons
+  }
+  Object.assign(options, _options)
 
   let defs = ''
   let draw = ''
 
-  let wallThickness = 5
-  let start = 0 - wallThickness
-  let end = Math.round((last - first) / step) + wallThickness
+  let wallLayers = Math.ceil(options.wallThickness / options.layerHeight)
+  let layers = Math.ceil((options.lastLayerPosition - options.firstLayerPosition) / options.layerHeight)
 
-  for (let i = start; i <= end; i++) {
-    let z = first + step * i
-    let path = svgPathFromPolygons(optimizePolygons(polygonsFromLines(getIntersections(facets, z))))
-    defs += `<path id="layer${i}Path" d="${path}" />\n`
-    defs += `<clipPath id="layer${i}ClipPath"><use xlink:href="#layer${i}Path"/></clipPath>\n`
+  for (let i = -wallLayers; i <= layers + wallLayers; i++) {
+    let z = options.firstLayerPosition + options.layerHeight * i
+    let path = svgPathFromPolygons(options.optimizePolygons(polygonsFromLines(getIntersections(facets, z))))
     defs += `
+    <path id="layer${i}Path" d="${path}" />
+    <clipPath id="layer${i}ClipPath"><use xlink:href="#layer${i}Path"/></clipPath>
     <mask id="layer${i}Mask" maskUnits="objectBoundingBox">
       <rect x="${boundingBox.position.x}" y="${boundingBox.position.y}" width="${boundingBox.size.x}" height="${boundingBox.size.y}" fill="white"></rect>
       <use xlink:href="#layer${i}Path" fill="black"/>
-    </mask>\n`
-    if (z >= first && z <= last) {
+    </mask>
+    `
+    if (i >= 0 && i <= layers) {
       let mask = ''
-      for (let j = 1; j < wallThickness; j++) {
-        mask += `<use xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)" mask="url(#layer${i + j}Mask)"/>
-        <use xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)" mask="url(#layer${i - j}Mask)"/>`
+      if (options.infill !== 'solid') {
+        for (let j = 1; j < wallLayers; j++) {
+          mask += `<use xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)" mask="url(#layer${i + j}Mask)"/>`
+          mask += `<use xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)" mask="url(#layer${i - j}Mask)"/>`
+        }
       }
       draw += `
       <g class="layer" id="layer${i}" slicer:z="${z.toFixed(2)}">
-        <use class="fill_pattern" xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)"/>
-        ${mask}
+        <use class="fill_${options.infill}" xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)"/>${mask}
       </g>\n`
-    } else {
-      draw += `<!-- ${z} -->`
     }
   }
 
@@ -170,7 +177,7 @@ let slice = (facets, first, last, step, optimizePolygons = polygons => polygons)
   >
   <defs>
     <pattern id="pattern" x="0" y="0" width="15" height="8.66" patternUnits="userSpaceOnUse">
-      <path class='pattern' d='M0 0 l2.5 0 l2.5 4.33 l5 0 l2.5 -4.33 l2.5 0 M0 8.66 l2.5 0 l2.5 -4.33 m5 0 l2.5 4.33 l2.5 0' />
+      <path fill='none' stroke='#fff' stroke-width="1" d='M0 0 l2.5 0 l2.5 4.33 l5 0 l2.5 -4.33 l2.5 0 M0 8.66 l2.5 0 l2.5 -4.33 m5 0 l2.5 4.33 l2.5 0' />
     </pattern>
     ${defs}
   </defs>
@@ -179,19 +186,15 @@ let slice = (facets, first, last, step, optimizePolygons = polygons => polygons)
       fill: #fff;
       stroke: #fff;
       stroke-alignment: inside;
-      stroke-width: 5;
+      stroke-width: ${options.wallThickness * 2};
       stroke-linecap: round;
       transform: scale(1, 1);
     }
     .layer .fill_pattern {
       fill: url(#pattern);
     }
-
-    .pattern {
+    .layer .fill_hollow {
       fill: none;
-      stroke: #fff;
-      stroke-width:1;
-      stroke-linecap: none;
     }
   </style>
   ${draw}
