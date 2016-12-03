@@ -144,8 +144,9 @@ let slice = (facets, first, last, step, optimizePolygons = polygons => polygons)
     </mask>\n`
     if (z >= first && z <= last) {
       let mask = ''
-      for (let j = 0; j < wallThickness; j++) {
-        mask += `<use xlink:href="#layer${i}Path" mask="url(#layer${i + j}Mask)"/><use xlink:href="#layer${i}Path" mask="url(#layer${i - j}Mask)"/>`
+      for (let j = 1; j < wallThickness; j++) {
+        mask += `<use xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)" mask="url(#layer${i + j}Mask)"/>
+        <use xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)" mask="url(#layer${i - j}Mask)"/>`
       }
       draw += `
       <g class="layer" id="layer${i}" slicer:z="${z.toFixed(2)}">
@@ -175,10 +176,10 @@ let slice = (facets, first, last, step, optimizePolygons = polygons => polygons)
   </defs>
   <style>
     .layer {
-      fill: #ddd;
+      fill: #fff;
       stroke: #fff;
       stroke-alignment: inside;
-      stroke-width: 0.5;
+      stroke-width: 5;
       stroke-linecap: round;
       transform: scale(1, 1);
     }
