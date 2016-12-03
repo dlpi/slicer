@@ -147,7 +147,7 @@ let slice = (facets, _options = {}) => {
     <clipPath id="layer${i}ClipPath"><use xlink:href="#layer${i}Path"/></clipPath>
     <mask id="layer${i}Mask" maskUnits="objectBoundingBox">
       <rect x="${boundingBox.position.x}" y="${boundingBox.position.y}" width="${boundingBox.size.x}" height="${boundingBox.size.y}" fill="white"></rect>
-      <use xlink:href="#layer${i}Path" fill="black"/>
+      <use xlink:href="#layer${i}Path" fill="black" stroke="#fff" stroke-width="${options.wallThickness * 2}"/>
     </mask>
     `
     if (i >= 0 && i <= layers) {
