@@ -178,8 +178,8 @@ let slice = (facets, _options = {}) => {
     xmlns:slicer="https://github.com/dlpi/slicer"
   >
   <defs>
-    <pattern id="pattern" x="0" y="0" width="15" height="8.66" patternUnits="userSpaceOnUse">
-      <path fill='none' stroke='#fff' stroke-width="1" d='M0 0 l2.5 0 l2.5 4.33 l5 0 l2.5 -4.33 l2.5 0 M0 8.66 l2.5 0 l2.5 -4.33 m5 0 l2.5 4.33 l2.5 0' />
+    <pattern id="pattern" x="0" y="0" width="5" height="2.88" patternUnits="userSpaceOnUse">
+      <path fill='none' stroke='#fff' stroke-width="0.75" d='M0 0 l0.83 0 l0.83 1.44 l1.66 0 l0.83 -1.44 l0.83 0 M0 2.88 l0.83 0 l0.83 -1.44 m1.66 0 l0.83 1.44l0.83 0' />
     </pattern>
     ${defs}
   </defs>
