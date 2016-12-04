@@ -153,10 +153,12 @@ let slice = (facets, _options = {}) => {
     if (i >= 0 && i <= layers) {
       let mask = ''
       if (options.infill !== 'solid') {
+        mask += `<g clip-path="url(#layer${i}ClipPath)">`
         for (let j = 1; j < wallLayers; j++) {
-          mask += `<use xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)" mask="url(#layer${i + j}Mask)"/>`
-          mask += `<use xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)" mask="url(#layer${i - j}Mask)"/>`
+          mask += `<use xlink:href="#layer${i}Path" mask="url(#layer${i + j}Mask)"/>`
+          mask += `<use xlink:href="#layer${i}Path" mask="url(#layer${i - j}Mask)"/>`
         }
+        mask += '</g>'
       }
       draw += `
       <g class="layer" id="layer${i}" slicer:z="${z.toFixed(2)}">
