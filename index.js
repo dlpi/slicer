@@ -106,7 +106,7 @@ let polygonsFromLines = (lines) => {
 }
 
 let svgPathFromPolygons = (polygons) => {
-  let path = '<path d="'
+  let path = ''
   for (let i = 0; i < polygons.length; i++) {
     let polygon = polygons[i]
     let c = 'M'
@@ -117,14 +117,54 @@ let svgPathFromPolygons = (polygons) => {
       c = 'L'
     }
   }
-  path += '" />'
   return path
 }
 
-let slice = (facets, first, last, step, optimizePolygons = polygons => polygons) => {
+let slice = (facets, _options = {}) => {
   let boundingBox = getBoundingBox(facets)
-  first = first === undefined ? (boundingBox.position.z) : first
-  last = last === undefined ? (boundingBox.position.z + boundingBox.size.z) : last
+  let defaultOptions = {
+    firstLayerPosition: boundingBox.position.z,
+    lastLayerPosition: boundingBox.position.z + boundingBox.size.z,
+    layerHeight: 0.1,
+    infillPattern: '<pattern id="pattern" x="0" y="0" width="100%" height="100%" patternUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="#fff" /></pattern>',
+    wallThickness: 2,
+    optimizePolygons: polygons => polygons
+  }
+  let options = Object.assign({}, defaultOptions, _options)
+
+  let defs = ''
+  let draw = ''
+
+  let wallLayers = Math.ceil(options.wallThickness / options.layerHeight)
+  let layers = Math.ceil((options.lastLayerPosition - options.firstLayerPosition) / options.layerHeight)
+
+  for (let i = -wallLayers; i <= layers + wallLayers; i++) {
+    let z = options.firstLayerPosition + options.layerHeight * i
+    let path = svgPathFromPolygons(options.optimizePolygons(polygonsFromLines(getIntersections(facets, z))))
+    defs += `
+    <path id="layer${i}Path" d="${path}" />
+    <clipPath id="layer${i}ClipPath"><use xlink:href="#layer${i}Path"/></clipPath>
+    <mask id="layer${i}Mask" maskUnits="objectBoundingBox">
+      <rect x="${boundingBox.position.x}" y="${boundingBox.position.y}" width="${boundingBox.size.x}" height="${boundingBox.size.y}" fill="white"></rect>
+      <use xlink:href="#layer${i}Path" fill="black" stroke="#fff" stroke-width="${options.wallThickness * 2}"/>
+    </mask>
+    `
+    if (i >= 0 && i <= layers) {
+      let mask = ''
+      if (options.infillPattern !== defaultOptions.infillPattern) {
+        mask += `<g clip-path="url(#layer${i}ClipPath)">`
+        for (let j = 1; j < wallLayers; j++) {
+          mask += `<use xlink:href="#layer${i}Path" mask="url(#layer${i + j}Mask)"/>`
+          mask += `<use xlink:href="#layer${i}Path" mask="url(#layer${i - j}Mask)"/>`
+        }
+        mask += '</g>'
+      }
+      draw += `
+      <g class="layer" id="layer${i}" slicer:z="${z.toFixed(2)}">
+        <use xlink:href="#layer${i}Path" fill="url(#pattern)" clip-path="url(#layer${i}ClipPath)"/>${mask}
+      </g>\n`
+    }
+  }
 
   let svg =
   `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -133,20 +173,23 @@ let slice = (facets, first, last, step, optimizePolygons = polygons => polygons)
     width="${boundingBox.size.x}"
     height="${boundingBox.size.y}"
     xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
     xmlns:slicer="https://github.com/dlpi/slicer"
   >
+  <defs>${options.infillPattern}${defs}</defs>
   <style>
-    path {
-      fill: white;
-      stroke: none;
+    .layer {
+      fill: #fff;
+      stroke: #fff;
+      stroke-alignment: inside;
+      stroke-width: ${options.wallThickness * 2};
+      stroke-linecap: round;
+      transform: scale(1, 1);
     }
   </style>
+  ${draw}
+  </svg>
   `
-  for (let z = first, i = 0; z <= last; z += step, i++) {
-    let path = svgPathFromPolygons(optimizePolygons(polygonsFromLines(getIntersections(facets, z))))
-    svg += `<g id="layer${i}" slicer:z="${z.toFixed(2)}">${path}</g>\n`
-  }
-  svg += '</svg>'
   return svg
 }
 
