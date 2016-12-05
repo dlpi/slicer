@@ -122,16 +122,15 @@ let svgPathFromPolygons = (polygons) => {
 
 let slice = (facets, _options = {}) => {
   let boundingBox = getBoundingBox(facets)
-  let options = {
+  let defaultOptions = {
     firstLayerPosition: boundingBox.position.z,
     lastLayerPosition: boundingBox.position.z + boundingBox.size.z,
     layerHeight: 0.1,
-    infill: 'solid', // solid, hollow, pattern
-    infillPattern: 'TODO', // TODO
+    infillPattern: '<pattern id="pattern" x="0" y="0" width="100%" height="100%" patternUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="#fff" /></pattern>',
     wallThickness: 2,
     optimizePolygons: polygons => polygons
   }
-  Object.assign(options, _options)
+  let options = Object.assign({}, defaultOptions, _options)
 
   let defs = ''
   let draw = ''
@@ -152,7 +151,7 @@ let slice = (facets, _options = {}) => {
     `
     if (i >= 0 && i <= layers) {
       let mask = ''
-      if (options.infill !== 'solid') {
+      if (options.infillPattern !== defaultOptions.infillPattern) {
         mask += `<g clip-path="url(#layer${i}ClipPath)">`
         for (let j = 1; j < wallLayers; j++) {
           mask += `<use xlink:href="#layer${i}Path" mask="url(#layer${i + j}Mask)"/>`
@@ -162,7 +161,7 @@ let slice = (facets, _options = {}) => {
       }
       draw += `
       <g class="layer" id="layer${i}" slicer:z="${z.toFixed(2)}">
-        <use class="fill_${options.infill}" xlink:href="#layer${i}Path" clip-path="url(#layer${i}ClipPath)"/>${mask}
+        <use xlink:href="#layer${i}Path" fill="url(#pattern)" clip-path="url(#layer${i}ClipPath)"/>${mask}
       </g>\n`
     }
   }
@@ -177,12 +176,7 @@ let slice = (facets, _options = {}) => {
     xmlns:xlink="http://www.w3.org/1999/xlink"
     xmlns:slicer="https://github.com/dlpi/slicer"
   >
-  <defs>
-    <pattern id="pattern" x="0" y="0" width="5" height="2.88" patternUnits="userSpaceOnUse">
-      <path fill='none' stroke='#fff' stroke-width="0.75" d='M0 0 l0.83 0 l0.83 1.44 l1.66 0 l0.83 -1.44 l0.83 0 M0 2.88 l0.83 0 l0.83 -1.44 m1.66 0 l0.83 1.44l0.83 0' />
-    </pattern>
-    ${defs}
-  </defs>
+  <defs>${options.infillPattern}${defs}</defs>
   <style>
     .layer {
       fill: #fff;
@@ -191,12 +185,6 @@ let slice = (facets, _options = {}) => {
       stroke-width: ${options.wallThickness * 2};
       stroke-linecap: round;
       transform: scale(1, 1);
-    }
-    .layer .fill_pattern {
-      fill: url(#pattern);
-    }
-    .layer .fill_hollow {
-      fill: none;
     }
   </style>
   ${draw}
