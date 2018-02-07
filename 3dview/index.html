@@ -3,7 +3,8 @@
   <head>
     <title>three.js webgl - STL</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
     <style>
       * {
         margin: 0;
@@ -15,20 +16,17 @@
         margin: 0px;
         overflow: hidden;
       }
-      #content {
+      #views {
         position: relative;
-        color: #444;
-        top: 10px;
-        left: 10%;
-        width: 80%;
-        text-align: center;
-        z-index: 0;
-        display:block;
+      }
+      #view_switch {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        z-index: 100;
       }
       #svg_view {
-        display: inline-block;
-        width:49%;
-        height: 350px;
+        height: 320px;
         background-color: #000;
       }
       #svg_view svg {
@@ -36,11 +34,8 @@
         height: 100%;
         transform: scaleY(-1);
       }
-      #view {
-        display: inline-block;
-        width: 49%;
-        height: 350px;
-        z-index: 1;
+      #stl_view {
+        height: 320px;
       }
       a { color: skyblue }
       .button { background:#999; color:#eee; padding:0.2em 0.5em; cursor:pointer }
@@ -56,25 +51,34 @@
         display: none;
       }
       #infillPattern label input:checked + img{
-        border-color: #0000dd;
+        opacity: 1;
       }
       #infillPattern label img {
         width: 20mm;
         height: 20mm;
-        border: 1mm solid #ccc;
+        margin-right: 2mm;
+        border: 1px solid #000;
+        opacity: 0.5;
       }
     </style>
   </head>
   <body>
-    <div id="content">
+    <div class="container">
+      <div class="row">
         <h1>Slicer</h1>
-      <form>
-      <input id="slide" type="range" min="0" max="100" step="0.1" style="width:100%">
-      <input id="wallThickness" type="text" value="2">
-      <div id="infillPattern"></div>
-      </form>
-      <div id="svg_view"></div>
-      <div id="view"></div>
+      </div>
+      <div class="row">
+        <input id="wallThickness" type="number" value="2">
+        <div id="infillPattern"></div>
+      </div>
+      <div class="row">
+        <input id="slide" type="range" min="0" max="100" step="0.1" style="width:100%">
+      </div>
+      <div class="row" id="views">
+        <div class="hidden-lg-up" id="view_switch">2D/3D view</div>
+        <div class="col-lg-6 hidden-md-down" id="svg_view"></div>
+        <div class="col-lg-6" id="stl_view"></div>
+      </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r79/three.min.js"></script>
@@ -91,10 +95,10 @@
       init()
       animate()
       function init () {
-        container = document.getElementById('view')
+        container = document.getElementById('stl_view')
 
         camera = new THREE.PerspectiveCamera(35, container.offsetWidth / container.offsetHeight, 1, 1000)
-        camera.position.z = 0
+        camera.position.z = 200
         controls = new THREE.TrackballControls(camera, container)
         controls.rotateSpeed = 3.0
         controls.zoomSpeed = 1.2
@@ -110,7 +114,7 @@
 
         var loader = new THREE.STLLoader()
         var facetsArray
-        loader.load('extruder_1.75mm-filament_no-mount.stl', function (geometry) {
+        loader.load('Bulbasaur_Planter.stl', function (geometry) {
           facetsArray = geometry.faces.map(function (face) {
             return {verts: [
               [geometry.vertices[face.a].x, geometry.vertices[face.a].y, geometry.vertices[face.a].z],
@@ -126,11 +130,11 @@
           var posY = -geometry.boundingBox.min.y - 0.5 * (geometry.boundingBox.max.y - geometry.boundingBox.min.y)
           mesh.position.set(posX, posY, 0)
           // reset camera
-          var w = (geometry.boundingBox.max.x - geometry.boundingBox.min.x)
-          var h = geometry.boundingBox.max.y - geometry.boundingBox.min.y
-          var objectSize = Math.max(w, h)
-          var fov = camera.fov * (Math.PI / 180)
-          camera.position.z = Math.abs(camera.aspect * objectSize / Math.sin(fov / 2))// Math.abs(objectSize / Math.sin(fov / 2))
+          // var w = (geometry.boundingBox.max.x - geometry.boundingBox.min.x)
+          // var h = geometry.boundingBox.max.y - geometry.boundingBox.min.y
+          // var objectSize = Math.max(w, h)
+          // var fov = camera.fov * (Math.PI / 180)
+          // camera.position.z = Math.abs(camera.aspect * objectSize / Math.sin(fov / 2))// Math.abs(objectSize / Math.sin(fov / 2))
           let layer = geometry.boundingBox.min.z + 0.5 * (geometry.boundingBox.max.z - geometry.boundingBox.min.z)
           document.getElementById('slide').min = geometry.boundingBox.min.z
           document.getElementById('slide').max = geometry.boundingBox.max.z
@@ -252,6 +256,12 @@
         <rect x="0" y="0" width="100" height="100" fill="black" /><rect x="0" y="0" width="100" height="100" fill="url(#pattern)" />
         </svg>`
         infillPatternContainer.appendChild(label)
+      })
+
+      document.getElementById('view_switch').addEventListener('click', () => {
+        document.getElementById('svg_view').classList.toggle('hidden-md-down')
+        document.getElementById('stl_view').classList.toggle('hidden-md-down')
+        onWindowResize()
       })
     </script>
   </body>

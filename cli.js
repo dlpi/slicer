@@ -61,7 +61,19 @@ if (cli.flags.last && isNaN(cli.flags.last)) {
   process.exit(1)
 }
 
-let svg = slicer.slice(facets, first, last, step, polygons => polygons.map(polygon => simplify(polygon, 0.1)))
+var options = {
+  firstLayerPosition: 8.9,
+  lastLayerPosition: 8.9,
+  layerHeight: step,
+  infillPattern:
+  `<pattern id="pattern" x="0" y="0" width="5" height="2.88" patternUnits="userSpaceOnUse">
+    <path fill='none' stroke='#fff' stroke-width="0.75" d='M0 0 l0.83 0 l0.83 1.44 l1.66 0 l0.83 -1.44 l0.83 0 M0 2.88 l0.83 0 l0.83 -1.44 m1.66 0 l0.83 1.44l0.83 0' />
+  </pattern>`,
+  wallThickness: 2,
+  optimizePolygons: polygons => polygons.map(polygon => simplify(polygon, 0.1))
+}
+
+let svg = slicer.slice(facets, options)
 
 fs.writeFile('out.svg', svg, function (err) {
   if (err) {
